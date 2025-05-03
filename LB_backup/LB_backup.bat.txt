@@ -1,0 +1,31 @@
+@echo off
+setlocal
+
+REM Load environment variables
+for /f "tokens=1,* delims==" %%A in (config.env) do (
+    set %%A=%%B
+)
+
+REM Get timestamp
+for /f %%a in ('powershell -command "Get-Date -Format yyyy-MM-dd_HH-mm-ss"') do set timestamp=%%a
+
+REM Set backup directory
+set backup_dir=%~dp0backup
+if not exist "%backup_dir%" mkdir "%backup_dir%"
+
+REM Path to mysqldump (adjust as needed)
+set mysqldump_path="C:\Program Files\MySQL\MySQL Server 8.0\bin\mysqldump.exe"
+
+REM Output file path
+set outfile=%backup_dir%\%DB_NAME%_%timestamp%.sql
+
+REM Perform the backup
+%mysqldump_path% -h %DB_HOST% -u %DB_USER% -p%DB_PASS% %DB_NAME% > "%outfile%"
+
+REM Optional GitHub push
+cd /d "%~dp0"
+git add backup/*.sql
+git commit -m "Auto backup on %timestamp%"
+git push origin main
+
+endlocal
